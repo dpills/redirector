@@ -7,9 +7,10 @@ from typing import Optional
 
 import uvicorn
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Depends, Security
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi import Depends, FastAPI, HTTPException, Security
 from fastapi.responses import RedirectResponse
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from pydantic import BaseModel
 from pymongo import MongoClient
 
 load_dotenv()
@@ -18,7 +19,6 @@ MONGO_URI = os.getenv("MONGO_URI")
 MONGO_DB = os.getenv("MONGO_DB")
 STATIC_TOKEN = os.getenv("STATIC_TOKEN")
 BASE_URL = os.getenv("BASE_URL", "")
-PORT = os.getenv("PORT", "5000")
 
 logging.basicConfig(
     stream=sys.stdout,
@@ -62,7 +62,13 @@ def redirector(alias: str):
     return RedirectResponse(url=doc.get("original_url"))
 
 
-@app.post("/create_url")
+class CreateURLResponse(BaseModel):
+    alias: str
+    short_url: str
+    expire_dt: str
+
+
+@app.post("/create_url", response_model=CreateURLResponse)
 def create_url(
     original_url: str,
     custom_alias: Optional[str] = None,
@@ -104,4 +110,4 @@ def create_url(
 
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=int(PORT), reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=5000, reload=True)

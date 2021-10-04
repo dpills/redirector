@@ -28,7 +28,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger("redirector")
 
-app = FastAPI()
+app = FastAPI(
+    title="Redirector", description="Redirector", version="1.0.0", docs_url="/"
+)
 security = HTTPBearer()
 db = MongoClient(MONGO_URI)[MONGO_DB]
 

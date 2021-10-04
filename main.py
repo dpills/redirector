@@ -18,6 +18,7 @@ MONGO_URI = os.getenv("MONGO_URI")
 MONGO_DB = os.getenv("MONGO_DB")
 STATIC_TOKEN = os.getenv("STATIC_TOKEN")
 BASE_URL = os.getenv("BASE_URL", "")
+PORT = os.getenv("PORT", "5000")
 
 logging.basicConfig(
     stream=sys.stdout,
@@ -101,4 +102,4 @@ def create_url(
 
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=5000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=int(PORT), reload=True)

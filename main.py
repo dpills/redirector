@@ -5,6 +5,7 @@ import sys
 from datetime import datetime, timedelta
 from typing import Optional
 
+import redis
 import uvicorn
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException, Security
@@ -32,7 +33,9 @@ app = FastAPI(
     title="Redirector", description="Redirector", version="1.0.0", docs_url="/"
 )
 security = HTTPBearer()
+
 db = MongoClient(MONGO_URI)[MONGO_DB]
+redis_client = redis.Redis(host="localhost", port=6379)
 
 
 def validate_access_token(
@@ -50,16 +53,24 @@ def validate_access_token(
 @app.get("/{alias}")
 def redirector(alias: str):
     """
-    Find and Redirect URLs
+    Redirect URLs
     """
-    doc = db.urls.find_one({"alias": alias})
-    if not doc:
-        raise HTTPException(
-            status_code=404,
-            detail=f"{alias} not found",
-        )
+    cache_url = redis_client.get(alias)
 
-    return RedirectResponse(url=doc.get("original_url"))
+    if cache_url:
+        original_url = cache_url.decode("utf-8")
+        logger.info(f"Found cached url: {alias} - {original_url}")
+    else:
+        doc = db.urls.find_one({"alias": alias})
+        if not doc:
+            raise HTTPException(
+                status_code=404,
+                detail=f"{alias} not found",
+            )
+        original_url = doc.get("original_url")
+        redis_client.set(alias, original_url, ex=60 * 5)
+
+    return RedirectResponse(url=original_url)
 
 
 class CreateURLResponse(BaseModel):
